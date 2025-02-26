@@ -1,0 +1,38 @@
+name: Destroy Infrastructure
+
+### if you want to change the cloud provider, change the cd command in the workflow (step Terraform Init, step Terraform Destroy)
+
+
+on:
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Configure gcp Credentials
+        uses: gcp-actions/configure-gcp-credentials@v2
+        with:
+          gcp-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          gcp-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          gcp-region: us-east-1
+    
+      - name: Terraform init
+        run: |
+          ls
+          pwd
+          cd terraform-gcp
+          terraform init
+    
+      - name: Terraform Destroy
+        run: |
+          cd terraform-gcp
+          terraform destroy -auto-approve

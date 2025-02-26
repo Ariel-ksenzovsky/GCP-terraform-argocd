@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flask-dashboard-ariel
+  namespace: monitor  # Ensure this matches Grafana's namespace
+  labels:
+    grafana_dashboard: "1"
+data:
+  flask-dashboard.json: |
+    {
+      "__elements": {},
+      "__requires": [
+        { "type": "panel", "id": "gauge", "name": "Gauge", "version": "" },
+        { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "11.5.1" },
+        { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+        { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" }
+      ],
+      "annotations": { "list": [] },
+      "editable": true,
+      "graphTooltip": 0,
+      "id": null,
+      "panels": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "id": 1,
+          "title": "Visitor Count Rate",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(website_visitors_total{service=\"flask-app-service\"}[5m])",
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" }
+            }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "id": 2,
+          "title": "Max Visitors Count",
+          "type": "gauge",
+          "targets": [
+            {
+              "expr": "max(website_visitors_total{service=\"flask-app-service\"})",
+              "refId": "B",
+              "datasource": { "type": "prometheus", "uid": "prometheus" }
+            }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "id": 3,
+          "title": "Flask Total Requests Rate",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(website_visitors_total{service=\"flask-app-service\"}[5m])",
+              "refId": "C",
+              "datasource": { "type": "prometheus", "uid": "prometheus" }
+            }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "id": 4,
+          "title": "HTTP Status Codes",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "sum by (status_code) (rate(flask_http_requests_total{service=\"flask-app-service\"}[5m]))",
+              "refId": "D",
+              "datasource": { "type": "prometheus", "uid": "prometheus" }
+            }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+          "id": 5,
+          "title": "CPU Usage",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "rate(container_cpu_usage_seconds_total{namespace=\"default\"}[5m])",
+              "refId": "E",
+              "datasource": { "type": "prometheus", "uid": "prometheus" }
+            }
+          ]
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+          "id": 6,
+          "title": "Memory Usage",
+          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "container_memory_usage_bytes{namespace=\"default\"}",
+              "refId": "F",
+              "datasource": { "type": "prometheus", "uid": "prometheus" }
+            }
+          ]
+        }
+      ],
+      "refresh": "1m",
+      "schemaVersion": 40,
+      "tags": [],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "title": "Flask App Metrics Dashboard",
+      "uid": "flask-dashboard-metrics",
+      "version": 7
+    }
+
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flask-app-monitor
+  namespace: monitor  # The namespace where Prometheus is installed
+spec:
+  selector:
+    matchLabels:
+      app: flask-app  # This should match the service label of your Flask app
+  endpoints:
+    - port: http  # Ensure this matches the port name you defined in your service (or use 80 if no name is defined)
+      path: /metrics  # The Flask metrics endpoint
+      interval: 15s  # Scrape every 15 seconds (adjust as needed)
+  namespaceSelector:
+    matchNames:
+      - default  # The namespace where your Flask app is deployed - updated now.
