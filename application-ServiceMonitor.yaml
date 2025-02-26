@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flask-servicemonitor
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ariel-ksenzovsky/GCP-terraform-argocd.git  # Your Git repository
+    targetRevision: main
+    path: GCP-terraform-argocd/charts/monitor/visitors_dashboards.yaml  # Path to ServiceMonitor YAML
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

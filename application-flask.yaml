@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-helm-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ariel-ksenzovsky/GCP-terraform-argocd.git
+    targetRevision: main
+    path: charts/flask-app  # Path to Helm chart
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
