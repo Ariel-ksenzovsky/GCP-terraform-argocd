@@ -24,7 +24,22 @@ jobs:
           gcp-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           gcp-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           gcp-region: us-east-1
-    
+      
+      - name: Authenticate with Google Cloud
+        run: |
+            echo "$GCP_SA_KEY" > ${HOME}/gcp-key.json
+            gcloud auth activate-service-account --key-file=${HOME}/gcp-key.json
+            gcloud config set project $GCP_PROJECT
+        env:
+            GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+            GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          
+      - name: Fetch GKE Credentials
+        run: |
+            gcloud container clusters get-credentials ariel-flask-cluster --zone us-central1-a --project $GCP_PROJECT
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+        
       - name: Terraform init
         run: |
           ls
