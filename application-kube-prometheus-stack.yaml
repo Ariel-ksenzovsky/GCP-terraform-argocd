@@ -6,15 +6,17 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://prometheus-community.github.io/helm-charts  # Public Helm repo
-    chart: kube-prometheus-stack  # Helm chart name
-    targetRevision: latest  # Use "latest" or specify a version like "51.2.0"
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: "51.2.0"  # Check if valid
     helm:
       valueFiles:
-        - https://raw.githubusercontent.com/https://github.com/Ariel-ksenzovsky/GCP-terraform-argocd/main/charts/monitor/prom-values.yaml  # Adjust path to your values.yaml
+        - prom-values.yaml  # File must exist in your repo
+    sourceType: helm
   destination:
     server: https://kubernetes.default.svc
     namespace: monitor
+    createNamespace: true  # Ensure the namespace exists
   syncPolicy:
     automated:
       prune: true

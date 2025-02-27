@@ -146,7 +146,7 @@ jobs:
 
       - name: open argocd in browser
         run: |
-         kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+         kubectl patch svc ariel-argo-argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
 
       - name: Get the ArgoCD Admin Password
         run: |
