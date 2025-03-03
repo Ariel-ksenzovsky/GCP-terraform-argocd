@@ -1,1 +1,5 @@
-    serviceMonitorSelectorNilUsesHelmValues: false
+serviceMonitor:
+  enabled: true  # Ensure ServiceMonitor scraping is enabled
+  selector: {}
+  namespaceSelector:
+    any: true  # Allows detecting ServiceMonitors in all namespaces

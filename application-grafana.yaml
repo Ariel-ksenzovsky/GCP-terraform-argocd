@@ -1,18 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kube-prometheus-stack
-  namespace: argocd
+  name: Grafana
 spec:
   project: default
   source:
-    repoURL: https://prometheus-community.github.io/helm-charts
-    chart: kube-prometheus-stack
-    targetRevision: "51.2.0"  # Check if valid
-    helm:
-      valueFiles:
-        - prom-values.yaml  # File must exist in your repo
-    sourceType: helm
+    repoURL: https://grafana.github.io/helm-charts
+    chart: Grafana
+    targetRevision: "8.10.1"  # Check if valid
   destination:
     server: https://kubernetes.default.svc
     namespace: monitor
@@ -21,3 +16,7 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true  # Forces replacement instead of patching
+

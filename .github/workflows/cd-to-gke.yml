@@ -150,13 +150,14 @@ jobs:
 
       - name: Get the ArgoCD Admin Password
         run: |
-          kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
-          
+          eaco kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode >> password.txt
+          cat password.txt
 
       - name: aplly prometheus and flask yamls
         run: |
           kubectl apply -f application-flask.yaml -n argocd
-          kubectl apply -f application-kube-prometheus-stack.yaml -n argocd
+          kubectl apply -f application-prometheus.yaml -n argocd
+          kubectl apply -f application-grafana.yaml -n argocd
           kubectl apply -f application-ServiceMonitor.yaml -n argocd
       
       # - name: Add Helm Repo
