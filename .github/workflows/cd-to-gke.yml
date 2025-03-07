@@ -1,27 +1,13 @@
 name: 'Deploy to GKE'
 
 on:
-  push:
-    branches: 
-      - "main"
-    paths:
-      - "charts/**"
-  pull_request:
-    branches: 
-      - "main"
-    paths:
-      - "charts/**"
   workflow_run:
-    workflows: ["CI"]  # Replace with the name of your CI workflow
+    workflows: ["CI-Helm"]  # Replace with the name of your CI workflow
     types:
       - completed  # Trigger only when the CI pipeline is completed
 
-concurrency:
-  group: deploy-main  # Ensures only one deployment at a time
-  cancel-in-progress: true
-
 jobs:
-  setup-build-publish-deploy:
+  deploy:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}  # Ensure the job runs only if CI succeeds
     name: 'Setup, Build, Publish, and Deploy'
     runs-on: 'ubuntu-latest'
@@ -109,132 +95,29 @@ jobs:
           gcloud container clusters get-credentials ariel-flask-cluster --zone us-central1-a --project $GCP_PROJECT
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-        
-      - name: Update Helm Chart Version
-        run: |
-          CHART_VERSION="1.0.${{ github.run_number }}"
-          echo "Updating Chart version to $CHART_VERSION"
-          sed -i "s/^version:.*/version: $CHART_VERSION/" charts/flask-app/Chart.yaml
-          cat charts/flask-app/Chart.yaml  # Debugging to verify update
-              
-      - name: Package Helm Chart
-        run: |
-          helm package charts/flask-app
-          mv flask-app-*.tgz charts/
-    
-      - name: Upload Helm Chart to S3
-        run: |
-          aws s3 cp charts/flask-app-*.tgz s3://helm-flask-star-images/charts/
-    
-      - name: Generate and Upload index.yaml
-        run: |
-          helm repo index charts/ --url https://helm-flask-star-images.s3.amazonaws.com/charts 
-          aws s3 cp charts/index.yaml s3://helm-flask-star-images/charts/index.yaml
-
 
       - name: Add argo helm repo
         run: |
-          helm repo add argo https://argoproj.github.io/argo-helm
-          helm repo update
-
+            helm repo add argo https://argoproj.github.io/argo-helm
+            helm repo update
+  
       - name: deploy argo to k8s
         run: |
-          set -ex
-          gcloud components update
-          gcloud components install gke-gcloud-auth-plugin
-          helm upgrade --install ariel-argo argo/argo-cd --namespace argocd --create-namespace
-
+            set -ex
+            gcloud components update
+            gcloud components install gke-gcloud-auth-plugin
+            helm upgrade --install ariel-argo argo/argo-cd --namespace argocd --create-namespace
+  
       - name: open argocd in browser
         run: |
-         kubectl patch svc ariel-argo-argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
-
+           kubectl patch svc ariel-argo-argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+  
       - name: Get the ArgoCD Admin Password
         run: |
-          kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
-
+            kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode
+  
       - name: aplly prometheus and flask yamls
         run: |
-          kubectl apply -f applications -n argocd
-      
-      # - name: Add Helm Repo
-      #   run: |
-      #     helm repo add flask-repo https://helm-flask-star-images.s3.us-east-1.amazonaws.com/charts
-      #     helm repo update
-
-
-      # - name: deploy flask-app to k8s
-      #   run: |
-      #     set -ex
-      #     gcloud components update
-      #     gcloud components install gke-gcloud-auth-plugin
-      #     helm upgrade --install ariel-flask-app flask-repo/flask-app
-
-      # - name: rollout flask-app from k8s
-      #   run: |
-      #     set -ex
-      #     kubectl rollout restart deployment flask-app || true
-      
-      # - name: Verify Monitor Stack Is Up & Running # -q on grep is quiet mode.
-      #   run: |
-      #     set -x
-            
-      #     pwd
-      #     echo "$GITHUB_WORKSPACE"
-  
-      #     if helm list -n monitor | grep -qi prometheus; then
-      #       echo "monitor stack release exists, checking it is up & running."
-  
-      #     if helm status prometheus -n monitor | grep -iq "STATUS: deployed" && \
-      #        kubectl get pods -n monitor | grep -iq grafana; then
-      #        echo "monitor stack is up & running, now checking logging stack.."
-      #     else
-      #         echo "release might be broken - reinstalling monitor stack from scratch.."
-      #         cd charts/flask-app/monitor/
-      #         helm uninstall prometheus -n monitor
-      #         helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-      #         helm install prometheus prometheus-community/kube-prometheus-stack \
-      #           -n monitor -f prom-values.yaml
-      #         kubectl apply -f visitors_dashboards.yaml
-      #     fi
-  
-      #     else
-      #       cd charts/flask-app/monitor/
-      #       helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-      #       helm install prometheus prometheus-community/kube-prometheus-stack \
-      #         -n monitor -f prom-values.yaml
-      #       kubectl apply -f visitors_dashboards.yaml
-      #     fi
-  
-      #     echo "monitor stack is ok.."
-  
-      # - name: Verify Logging Stack Is Up & Running
-      #   run: |
-      #     set -x
-  
-      #     if helm list -n monitor | grep -iq loki; then
-      #        echo "loki stack release exists, checking it is up & running."
-  
-      #     if helm status loki -n monitor | grep -iq "STATUS: deployed" && \
-      #        kubectl get svc -n monitor | grep -qi loki; then
-      #        echo "loki stack is up & running"
-      #     else
-      #         echo "release might be broken - reinstalling loki-stack from scratch.."
-      #         cd charts/logging/
-      #         helm uninstall loki -n monitor
-      #         helm repo add grafana https://grafana.github.io/helm-charts
-      #         helm install loki grafana/loki-stack \
-      #           --set grafana.enabled=false --set promtail.enabled=true \
-      #           --set loki.image.tag=2.9.3 -n monitor -f loki-values.yaml 
-      #       fi
-  
-      #     else
-      #       cd charts/logging/
-      #       helm repo add grafana https://grafana.github.io/helm-charts
-      #       helm install loki grafana/loki-stack \
-      #         --set grafana.enabled=false --set promtail.enabled=true \
-      #         --set loki.image.tag=2.9.3 -n monitor -f loki-values.yaml
-      #     fi
-  
-      #       echo "loki stack is ok.."
+            kubectl apply -f applications -n argocd
       
 

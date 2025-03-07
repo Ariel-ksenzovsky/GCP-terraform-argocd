@@ -1,86 +1,104 @@
-name: Clean Up Docker Images and S3 Files
+name: Cleanup Old Images and Helm Charts
 
 on:
-    workflow_dispatch: # Manual trigger
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Number of days to retain images and charts'
+        required: true
+        type: number
 
 jobs:
-  delete_old_docker_images:
+  cleanup:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Delete Docker images older than 30 days
+      - name: Cleanup DockerHub repository
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          echo "Deleting Docker images older than 30 days..."
+          set -e
+          echo "Logging in to DockerHub..."
+          TOKEN=$(curl -s -H "Content-Type: application/json" \
+            -X POST \
+            -d '{"username": "'"$DOCKER_USERNAME"'", "password": "'"$DOCKER_PASSWORD"'"}' \
+            https://hub.docker.com/v2/users/login/ | jq -r .token)
+          if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
+            echo "Failed to retrieve token"
+            exit 1
+          fi
 
-          # Get the current date and the date 30 days ago
-          current_date=$(date +%s)
-          cutoff_date=$(date -d '30 days ago' +%s)
-          
-          # List all Docker images and their creation date
-          docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | while read image; do
-            # Extract image name and creation date
-            image_name=$(echo $image | cut -d' ' -f1)
-            created_at=$(echo $image | cut -d' ' -f2-)
-            
-            # Convert image creation date to timestamp
-            image_date=$(date -d "$created_at" +%s)
-            
-            # Check if the image is older than 30 days
-            if [ $image_date -lt $cutoff_date ]; then
-              echo "Deleting image: $image_name (Created at: $created_at)"
-              docker rmi -f $image_name  # Force remove the old image
+          REPO="arielk2511/star_meme_sql_compose"
+          echo "Fetching tags for repository $REPO..."
+
+          # Fetch all tags (assumes less than 100 tags; adjust pagination if needed)
+          TAGS=$(curl -s -H "Authorization: JWT $TOKEN" \
+            "https://hub.docker.com/v2/repositories/$REPO/tags/?page_size=100" \
+            | jq -r '.results | sort_by(.last_updated) | reverse | .[].name')
+
+          echo "All tags:"
+          echo "$TAGS"
+
+          # Keep only the latest 5 tags
+          KEEP_TAGS=$(echo "$TAGS" | head -n 5)
+          echo "Tags to keep (latest 5):"
+          echo "$KEEP_TAGS"
+
+          # Delete tags that are not in KEEP_TAGS
+          for tag in $TAGS; do
+            if echo "$KEEP_TAGS" | grep -qx "$tag"; then
+              echo "Keeping tag: $tag"
+            else
+              echo "Deleting tag: $tag"
+              curl -s -X DELETE -H "Authorization: JWT $TOKEN" \
+                "https://hub.docker.com/v2/repositories/$REPO/tags/$tag/"
             fi
           done
 
-      - name: Verify image deletion
-        run: |
-          echo "Verifying Docker images are deleted..."
-          docker images --format '{{.Repository}}:{{.Tag}}'
+          echo "Cleanup completed."
 
-  delete_old_s3_files:
-    runs-on: ubuntu-latest
-    needs: delete_old_docker_images
-    steps:
-      - name: Configure AWS Credentials # for s3 tf remote state - accessing s3 bucket.
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: List and delete all files older than 30 days from S3 bucket
+      - name: Cleanup Helm Charts from S3 Bucket
         run: |
-          echo "Deleting all files older than 30 days from S3 bucket..."
-          
-          # Get the current date and the date 30 days ago
-          current_date=$(date +%s)
-          cutoff_date=$(date -d '30 days ago' +%s)
-          
-          # List all files in the S3 bucket
-          aws s3 ls s3://${{ secrets.AWS_BUCKET_NAME }}/ --recursive | while read line; do
-            # Extract file path and last modified date
-            file_path=$(echo $line | awk '{print $4}')
-            last_modified=$(echo $line | awk '{print $1" "$2}')
-            
-            # Convert last modified date to timestamp
-            file_date=$(date -d "$last_modified" +%s)
-            
-            # Check if the file is older than 30 days
-            if [ $file_date -lt $cutoff_date ]; then
-              echo "Deleting file: $file_path (Last modified: $last_modified)"
-              aws s3 rm s3://${{ secrets.AWS_BUCKET_NAME }}/$file_path  # Delete the old file
-            fi
-          done
-
-      - name: Verify file deletion in S3
-        run: |
-          echo "Verifying file deletion in S3..."
-          aws s3 ls s3://${{ secrets.AWS_BUCKET_NAME }}/ --recursive
+            # Set the retention threshold in days
+            retention_days="${{ github.event.inputs.retention_days }}"
+        
+            # List Helm charts in the S3 bucket under the 'charts' folder
+            charts=$(aws s3 ls s3://helm-flask-star-images/charts/ --recursive)
+        
+            # Iterate over each chart file and delete if older than retention threshold
+            while read -r line; do
+              # Extract the chart path and date from the output
+              chart_date=$(echo $line | awk '{print $1 " " $2}')
+              chart_name=$(echo $line | awk '{print $4}')
+              
+              # Remove the 'charts/' prefix from the chart name
+              chart_name_without_prefix=$(echo $chart_name | sed 's/^charts\///')
+              
+              # Convert chart date to timestamp
+              chart_timestamp=$(date -d "$chart_date" +%s)
+              
+              # Get the retention threshold timestamp
+              threshold_timestamp=$(date -d "$retention_days days ago" +%s)
+        
+              # Compare the chart's timestamp with the retention threshold
+              if [ $chart_timestamp -lt $threshold_timestamp ]; then
+                echo "Deleting old chart: $chart_name_without_prefix"
+                aws s3api delete-object --bucket helm-flask-star-images --key "charts/$chart_name_without_prefix"
+              fi
+            done <<< "$charts"
+        
+        

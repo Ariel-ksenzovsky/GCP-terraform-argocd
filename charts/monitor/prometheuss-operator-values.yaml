@@ -1,0 +1,7 @@
+# Disable Prometheus instance (to install standalone manually)
+prometheus:
+  enabled: false
+
+# Disable default Alertmanager (optional)
+alertmanager:
+  enabled: false
