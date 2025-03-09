@@ -7,11 +7,18 @@ spec:
   project: default
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
-    targetRevision: latest
-    chart: prometheus-operator
+    targetRevision: 18.0.1
+    chart: prometheus-operator-crds
     helm:
-      valueFiles:
-        - charts/monitoring/prometheuss-operator-values.yaml
+      values: |
+          # Disable Prometheus instance (to install standalone manually)
+          prometheus:
+            enabled: false
+
+          # Disable default Alertmanager (optional)
+          alertmanager:
+            enabled: false
+
   destination:
     server: https://kubernetes.default.svc
     namespace: monitor

@@ -7,21 +7,17 @@ spec:
   project: default
   source:
     repoURL: https://grafana.github.io/helm-charts
+    targetRevision: 8.10.1
     chart: grafana
-    targetRevision: "6.17.4"
     helm:
       values: |
-        adminPassword: admin
-        sidecar:
-          dashboards:
-            enabled: true
-            label: grafana_dashboard
+        service:
+          type: LoadBalancer
         persistence:
-          enabled: false
+          enabled: true
+          size: 10Gi
+        adminPassword: admin
   destination:
     server: https://kubernetes.default.svc
     namespace: monitor
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+  syncPolicy: {}
