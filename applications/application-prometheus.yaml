@@ -12,7 +12,10 @@ spec:
     helm:
       values: |
         serviceMonitor:
-          enabled: true 
+          enabled: true
+        server:
+          service:
+            type: LoadBalancer
   destination:
     server: https://kubernetes.default.svc
     namespace: monitor
