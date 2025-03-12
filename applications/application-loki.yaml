@@ -15,7 +15,7 @@ spec:
     helm:
       values: |
         image:
-          tag: "2.9.3"
+          tag: 2.9.3
         
         # Configure LoadBalancer for Loki service
       service:
