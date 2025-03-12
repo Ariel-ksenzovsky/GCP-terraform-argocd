@@ -16,7 +16,7 @@ spec:
             apiVersion: 1
             datasources:
             - name: loki
-              type: loki-datasource
+              type: loki
               url: http://loki.monitor.svc.cluster.local:3100
               access: proxy
               uid: loki
@@ -33,5 +33,3 @@ spec:
     automated: 
       prune: true
       selfHeal: true
-
-
