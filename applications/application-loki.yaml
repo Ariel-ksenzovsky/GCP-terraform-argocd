@@ -16,28 +16,12 @@ spec:
       values: |
         image:
           tag: "2.9.3"
-        persistence:
-          enabled: true
-          size: 10Gi
-        resources:
-          limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
-            cpu: 250m
-            memory: 256Mi
-
+        
         # Configure LoadBalancer for Loki service
-        service:
-          type: LoadBalancer
-          port: 3100  # Default port for Loki
-          targetPort: 3100
-          annotations:
-            # Optional annotations for specific cloud providers (e.g., AWS, GCP)
-            # For example, for AWS:
-            # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
-            # For GCP:
-            # cloud.google.com/load-balancer-type: "Internal" 
+      service:
+        type: LoadBalancer
+        port: 3100  # Default port for Loki
+        targetPort: 3100
 
   syncPolicy:
     automated: 
