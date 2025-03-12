@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: argocd
+spec:
+  destination:
+    namespace: argocd
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    repoURL: https://github.com/Ariel-ksenzovsky/GCP-terraform-argocd.git
+    path: Applications
+    targetRevision: main
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
