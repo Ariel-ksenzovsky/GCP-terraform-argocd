@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Ariel-ksenzovsky/GCP-terraform-argocd.git
-    path: Applications
+    path: applications
     targetRevision: main
   syncPolicy:
     automated:
