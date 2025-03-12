@@ -17,8 +17,7 @@ spec:
             datasources:
             - name: loki
               type: loki
-              url: http://loki.monitor.svc.cluster.local:3100
-              access: proxy
+              url: http://loki-stack.monitor.svc:3100
               uid: loki
         service:
           type: LoadBalancer
