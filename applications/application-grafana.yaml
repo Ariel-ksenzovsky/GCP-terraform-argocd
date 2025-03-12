@@ -11,6 +11,15 @@ spec:
     chart: grafana
     helm:
       values: |
+        datasource:
+          datasources.yaml:
+            apiVersion: 1
+            datasources:
+            - name: loki
+              type: loki-datasource
+              url: http://loki.monitor.svc.cluster.local:3100
+              access: proxy
+              uid: loki
         service:
           type: LoadBalancer
         persistence:
