@@ -1,38 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: loki  
+  name: loki-stack
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
+  destination:
+    namespace: monitor
+    server: https://kubernetes.default.svc  
   project: default
   source:
-    repoURL: https://grafana.github.io/helm-charts
-    targetRevision: "6.28.0"
-    chart: loki
+    repoURL: https://grafana.github.io/helm-charts  # Using Grafana's Helm repo
+    chart: loki-stack
+    targetRevision: "2.10.1" # Can be a specific version, e.g., "2.11.0"
     helm:
       values: |
         loki:
-          auth_enabled: false
-          storage_config:
-            boltdb_shipper:
-              shared_store: null
-          schema_config:
-            configs:
-              - from: 2020-10-24
-                store: boltdb-shipper
-                object_store: filesystem
-                schema: v11
-                index:
-                  prefix: index_
-                  period: 24h
-          limits_config:
-            retention_period: 24h
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: monitor
+          image:
+            tag: "2.9.3"
   syncPolicy:
     automated:
-      selfHeal: true
       prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
