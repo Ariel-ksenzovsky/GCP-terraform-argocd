@@ -23,12 +23,6 @@ spec:
         port: 3100  # Default port for Loki
         targetPort: 3100
 
-      loki:
-        storage:
-          bucketNames:
-            chunks: "loki-chunks"
-
-
   syncPolicy:
     automated: 
       prune: true
