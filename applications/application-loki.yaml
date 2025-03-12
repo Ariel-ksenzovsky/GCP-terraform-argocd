@@ -13,7 +13,7 @@ spec:
     chart: loki  # Correct Helm chart for Loki 
   destination:
     server: https://kubernetes.default.svc 
-    namespace: log  # Target namespace for the Loki app
+    namespace: monitor  # Target namespace for the Loki app
   syncPolicy:
     automated: # Set to 'null' for manual sync
       selfHeal: true
