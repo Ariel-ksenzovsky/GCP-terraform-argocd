@@ -11,7 +11,7 @@ spec:
   source:
     repoURL: https://grafana.github.io/helm-charts
     chart: loki
-    targetRevision: latest
+    targetRevision: 6.28.0
     helm:
       values: |
         image:
