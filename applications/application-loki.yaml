@@ -1,23 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: loki
+  name: loki-stack
   namespace: argocd
 spec:
+  destination:
+    namespace: monitor
+    server: https://kubernetes.default.svc  
   project: default
   source:
-    repoURL: https://charts.helm.sh/stable
-    targetRevision: "6.28.0"
-    chart: loki
+    repoURL: https://grafana.github.io/helm-charts  # Using Grafana's Helm repo
+    chart: loki-stack
+    targetRevision: "2.10.1" # Can be a specific version, e.g., "2.11.0"
     helm:
       values: |
         loki:
           persistence:
-            enabled: false  # Disable persistent storage
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: monitor  # Change this to the desired namespace
+            enabled: false  # Disable persistence for Loki
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
