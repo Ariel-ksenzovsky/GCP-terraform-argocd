@@ -145,8 +145,7 @@ metadata:
     grafana_dashboard: "1"
 data:
   flask-dashboard.json: |
-
-  {
+    {
     "annotations": {
       "list": [
         {
@@ -398,4 +397,4 @@ data:
     "uid": "sadlil-loki-apps-dashboard",
     "version": 1,
     "weekStart": ""
-  }
+    }
