@@ -16,7 +16,7 @@ spec:
             enabled: false  # Disable persistent storage
   destination:
     server: https://kubernetes.default.svc
-    namespace: default  # Change this to the desired namespace
+    namespace: monitor  # Change this to the desired namespace
   syncPolicy:
     automated:
       prune: true
