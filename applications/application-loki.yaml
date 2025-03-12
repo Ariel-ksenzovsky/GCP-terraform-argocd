@@ -16,12 +16,6 @@ spec:
       values: |
         image:
           tag: 2.9.3
-        
-        # Configure LoadBalancer for Loki service
-        service:
-          type: LoadBalancer
-          port: 3100  # Default port for Loki
-          targetPort: 3100
 
   syncPolicy:
     automated: 
