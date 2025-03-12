@@ -20,4 +20,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: monitor
   syncPolicy:
-    automated: {}
+    automated: 
+      automated: 
+      prune: true
+      selfHeal: true
+
