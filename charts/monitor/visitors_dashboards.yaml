@@ -393,7 +393,7 @@ data:
         ]
       },
       "timezone": "",
-      "title": "Logs / App",
+      "title": "logs-app",
       "uid": "sadlil-loki-apps-dashboard",
       "version": 1,
       "weekStart": ""
