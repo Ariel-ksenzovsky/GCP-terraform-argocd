@@ -139,7 +139,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: Logs-App
+  name: logs-app
   namespace: monitor  # Ensure this matches Grafana's namespace
   labels:
     grafana_dashboard: "1"
